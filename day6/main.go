@@ -19,12 +19,19 @@ func HasDuplicates(s string) bool {
 	return hasDuplicate
 }
 
+func GetProcessedPosition(str string, size int) int {
+	for i := 0; i < len(str)-size; i++ {
+		substring := str[i : i+size]
+		if !HasDuplicates(substring) {
+			return i + size
+		}
+	}
+	return -1
+}
+
 func main() {
 	byteContent, _ := os.ReadFile("input.txt")
 	content := string(byteContent)
 
-	for i := 0; i < len(content)-4; i++ {
-		substring := content[i : i+4]
-		log.Println(substring)
-	}
+	log.Println(GetProcessedPosition(content, 14))
 }
