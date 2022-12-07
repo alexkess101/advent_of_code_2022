@@ -1,13 +1,18 @@
 package main
 
-import "log"
+import (
+	"log"
+	"os"
+)
 
 func HasDuplicates(s string) bool {
-	key := make(map[string]interface{})
+	key := make(map[string]int)
 	hasDuplicate := false
 	for _, c := range s {
 		if _, ok := key[string(c)]; ok {
 			hasDuplicate = true
+		} else {
+			key[string(c)] = 0
 		}
 	}
 
@@ -15,5 +20,11 @@ func HasDuplicates(s string) bool {
 }
 
 func main() {
-	log.Println("hello")
+	byteContent, _ := os.ReadFile("input.txt")
+	content := string(byteContent)
+
+	for i := 0; i < len(content)-4; i++ {
+		substring := content[i : i+4]
+		log.Println(substring)
+	}
 }
