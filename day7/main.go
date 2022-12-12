@@ -2,25 +2,29 @@ package main
 
 import (
 	"bufio"
+	"io"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 )
 
 func main() {
-	//fileStructure := make(map[string]Item)
-	//r, err := os.Open("input.txt")
-	//defer r.Close()
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//scanner := bufio.NewScanner(r)
-	//scanner.Split(bufio.ScanLines)
-	//next := scanner.Scan
-	//text := scanner.Text
-	//
-	//next()
-
+	fileStructure := NewItem(Dir)
+	var counter int64
+	var totalSum int64
+	counter = 0
+	totalSum = 0
+	r, err := os.Open("input.txt")
+	defer r.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	scanner := bufio.NewReader(r)
+	Analyzer(fileStructure, scanner)
+	Counter(fileStructure, &counter)
+	TotalSumOfSizeLessThanOrEqualTo(100000, fileStructure, &totalSum)
+	log.Println(totalSum)
 }
 
 type FileType string
@@ -28,14 +32,13 @@ type FileType string
 const (
 	File FileType = "FILE"
 	Dir           = "DIR"
-	None          = "NONE"
 )
 
 type Item struct {
 	t        FileType
 	name     string
 	children map[string]*Item
-	size     int
+	size     int64
 }
 
 func NewItem(t FileType) *Item {
@@ -51,18 +54,19 @@ func Parse(s string) []string {
 	return strings.Split(s, " ")
 }
 
-func ProcessItems(dir *Item, scanner *bufio.Scanner) {
-	for scanner.Scan() {
-		line := Parse(scanner.Text())
-		if line[0] == "$" {
+func ProcessItems(dir *Item, scanner *bufio.Reader) {
+	for {
+		command, _, err := scanner.ReadLine()
+		if err == io.EOF {
 			break
 		}
+		line := Parse(string(command))
 		if line[0] == "dir" {
 			newDir := NewItem(Dir)
 			dir.children[line[1]] = newDir
 		} else {
 			file := NewItem(File)
-			size, err := strconv.Atoi(line[0])
+			size, err := strconv.ParseInt(line[0], 10, 64)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -70,25 +74,50 @@ func ProcessItems(dir *Item, scanner *bufio.Scanner) {
 			file.name = line[1]
 			dir.children[line[1]] = file
 		}
+		peek, _ := scanner.Peek(1)
+		if string(peek) == "$" {
+			break
+		}
 	}
 }
 
-func cdCommand(dir *Item, scanner *bufio.Scanner) {
-	scanner.Scan()
-	command := Parse(scanner.Text())
-	dir.t = Dir
+func Analyzer(dir *Item, scanner *bufio.Reader) {
+	for {
+		command, _, err := scanner.ReadLine()
+		if err == io.EOF {
+			break
+		}
+		line := Parse(string(command))
+		dir.t = Dir
 
-	if command[0] == "$" {
-		if command[1] == "ls" {
-			scanner.Scan()
+		if line[1] == "ls" {
 			ProcessItems(dir, scanner)
 		} else {
-			if command[1] == ".." {
-				scanner.Scan()
-				return
+			if line[2] != ".." {
+				Analyzer(dir.children[line[2]], scanner)
 			} else {
-				cdCommand(dir.children[command[1]], scanner)
+				return
 			}
+		}
+	}
+}
+
+func Counter(dir *Item, counter *int64) {
+	for _, item := range dir.children {
+		if item.t == File {
+			*counter += item.size
+		} else {
+			Counter(item, counter)
+		}
+	}
+	dir.size = *counter
+}
+
+func TotalSumOfSizeLessThanOrEqualTo(size int64, dir *Item, totalSize *int64) {
+	for _, item := range dir.children {
+		if item.t == Dir && item.size <= size {
+			*totalSize += item.size
+			TotalSumOfSizeLessThanOrEqualTo(size, item, totalSize)
 		}
 	}
 }
