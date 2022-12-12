@@ -1,9 +1,9 @@
 package main
 
 import (
-	"bufio"
 	"log"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -15,105 +15,55 @@ func setup(fileContent []byte) {
 	}
 }
 
-func clear() {
-	if err := os.Remove(testFile); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func TestProcessItemsDir(t *testing.T) {
+func TestProcessInput(t *testing.T) {
 	log.SetFlags(log.Ltime | log.Lshortfile)
-	setup([]byte("dir brhvclj\ndir clnvqg\ndir dtqtvvrn\ndir lcz\ndir pcqjncwl\ndir qwvfpgl\ndir rtmj\ndir shg\ndir tcdmgwp"))
-	item := NewItem(Dir)
-	r, _ := os.Open(testFile)
-	defer r.Close()
-	scanner := bufio.NewReader(r)
+	setup([]byte("$ ls\ndir brhvclj\ndir clnvqg\ndir dtqtvvrn\ndir lcz\ndir pcqjncwl\ndir qwvfpgl\ndir rtmj\ndir shg\ndir tcdmgwp\n$ cd brhvclj\n$ ls\n40016 mtlscfrd.gdr\ndir mvslzl\n112449 npp.vjv\n46674 pbgjwb\ndir qdtls\ndir tfns\n$ cd mvslzl\n$ ls\ndir dngldfww\ndir dzplphqw\n$ cd dngldfww\n$ ls\n102218 wcrvztrh.mzb\n$ cd ..\n$ cd dzplphqw\n$ ls\n93724 brhvclj\n169467 cwqwcjc.lgd\n$ cd ..\n$ cd ..\n$ cd qdtls\n$ ls\ndir nnlzrwgh"))
+	content, _ := os.ReadFile(testFile)
+	input := strings.Split(string(content), "\n")
 
-	ProcessItems(item, scanner)
-	if len(item.children) != 9 {
-		t.Fatal("Failed")
+	key := ProcessInput(input)
+
+	if len(key) != 6 {
+		t.Fatal("failed - length should be 6 but got: ", len(key))
 	}
-}
-
-func TestProcessItemsFiles(t *testing.T) {
-	log.SetFlags(log.Ltime | log.Lshortfile)
-	setup([]byte("93724 brhvclj\n169467 cwqwcjc.lgd"))
-	item := NewItem(Dir)
-	r, _ := os.Open(testFile)
-	defer r.Close()
-	scanner := bufio.NewReader(r)
-
-	ProcessItems(item, scanner)
-
-	if len(item.children) != 2 {
+	if key[len(key)-1] != "/brhvclj/mvslzl/dzplphqw 169467" {
 		t.Fatal("failed")
 	}
 }
 
-func TestFirstCd(t *testing.T) {
+func TestProcessInput2(t *testing.T) {
 	log.SetFlags(log.Ltime | log.Lshortfile)
-	setup([]byte("$ ls\ndir brhvclj\ndir clnvqg\n$ cd brhvclj\n$ ls\n1 file.txt"))
-	item := NewItem(Dir)
-	r, _ := os.Open(testFile)
-	defer r.Close()
-	scanner := bufio.NewReader(r)
+	setup([]byte("$ ls\ndir a\ndir d\n$ cd a\n$ ls\ndir e\n29116 f\n2557 g\n62596 h.lst\n$ cd e\n$ ls\n584 i\n$ cd ..\n$ cd ..\n$ cd d\n$ ls\n4060174 j\n8033020 d.log\n5626152 d.ext\n7214296 k"))
+	content, _ := os.ReadFile(testFile)
+	input := strings.Split(string(content), "\n")
 
-	Analyzer(item, scanner)
+	key := ProcessInput(input)
+	dirTotals := MapValuesToDirectory(key)
 
-	if len(item.children["brhvclj"].children) != 1 {
-		t.Fatal("failed")
+	if GetTotalCount(dirTotals) != 95437 {
+		t.Fatal("failed - expected '95437' but got: ", GetTotalCount(dirTotals))
 	}
 }
 
-func TestCdBack(t *testing.T) {
+func TestProcessInput3(t *testing.T) {
 	log.SetFlags(log.Ltime | log.Lshortfile)
-	setup([]byte("$ ls\ndir brhvclj\ndir clnvqg\n$ cd brhvclj\n$ ls\n1 file.txt\n$ cd ..\n$ ls\n2 file2.txt"))
-	item := NewItem(Dir)
-	r, _ := os.Open(testFile)
-	defer r.Close()
-	scanner := bufio.NewReader(r)
+	setup([]byte("$ cd a\n$ cd b\n$ cd c\n$ ls\n100 blah\n$ cd ..\n$ ls\n100 test\n$ cd ..\n$ ls\n100 another"))
+	content, _ := os.ReadFile(testFile)
+	input := strings.Split(string(content), "\n")
 
-	Analyzer(item, scanner)
+	key := ProcessInput(input)
+	dirTotals := MapValuesToDirectory(key)
+	log.Println(key)
+	log.Println(dirTotals)
 
-	if len(item.children) != 3 && len(item.children["brhvclj"].children) != 1 {
-		t.Fatal("failed")
+	if GetTotalCount(dirTotals) != 600 {
+		t.Fatal("failed - expected '600' but got: ", GetTotalCount(dirTotals))
 	}
 }
 
-func TestFileStructureCount(t *testing.T) {
-	log.SetFlags(log.Ltime | log.Lshortfile)
-	setup([]byte("$ ls\ndir a\n14848514 b.txt\n8504156 c.dat\ndir d\n$ cd a\n$ ls\ndir e\n29116 f\n2557 g\n62596 h.lst\n$ cd e\n$ ls\n584 i\n$ cd ..\n$ cd ..\n$ cd d\n$ ls\n4060174 j\n8033020 d.log\n5626152 d.ext\n7214296 k"))
-	item := NewItem(Dir)
-	r, _ := os.Open(testFile)
-	defer r.Close()
-	scanner := bufio.NewReader(r)
-	Analyzer(item, scanner)
-	var counter int64
-	counter = 0
-	Counter(item, &counter)
-
-	if item.size != 48381165 {
-		t.Fatal("failed")
-	}
-}
-
-func TestTotalSumOfSizeLessThanOrEqualTo(t *testing.T) {
-	log.SetFlags(log.Ltime | log.Lshortfile)
-	setup([]byte("$ ls\ndir a\n14848514 b.txt\n8504156 c.dat\ndir d\n$ cd a\n$ ls\ndir e\n29116 f\n2557 g\n62596 h.lst\n$ cd e\n$ ls\n584 i\n$ cd ..\n$ cd ..\n$ cd d\n$ ls\n4060174 j\n8033020 d.log\n5626152 d.ext\n7214296 k"))
-	item := NewItem(Dir)
-	item.name = "main"
-	r, _ := os.Open(testFile)
-	defer r.Close()
-	scanner := bufio.NewReader(r)
-	Analyzer(item, scanner)
-	var counter int64
-	var totalSize int64
-	counter = 0
-	totalSize = 0
-	Counter(item, &counter)
-	TotalSumOfSizeLessThanOrEqualTo(100000, item, &totalSize)
-
-	if totalSize != 95437 {
-		t.Fatal("failed - expected '95437' but got: ", totalSize)
+func TestRemoveDir(t *testing.T) {
+	dir := "/dir1/dir2"
+	if RemoveDir(dir) != "/dir1" {
+		t.Fatal("failed - expected '/dir1' but got: ", RemoveDir(dir))
 	}
 }
