@@ -1,12 +1,13 @@
 package main
 
 import (
+	"log"
 	"strconv"
 	"strings"
 	"testing"
 )
 
-var instructions = []string{
+var instructionsSmall = []string{
 	"R 4",
 	"U 4",
 	"L 3",
@@ -49,54 +50,49 @@ func TestHeadPreviousMove(t *testing.T) {
 func TestIfTailShouldMove(t *testing.T) {
 	head := NewHead()
 	tail := NewTail()
+
 	head.move("R")
-	if tail.shouldMove(head) {
-		t.Fatal("failed")
-	}
 	head.move("R")
 	if !tail.shouldMove(head) {
 		t.Fatal("failed")
 	}
-	tail.move("U")
-	if !tail.shouldMove(head) {
-		t.Fatal("failed")
-	}
-	tail.move("R")
-	if tail.shouldMove(head) {
+	if tail.isDiagonal(head.pos) {
 		t.Fatal("failed")
 	}
 	head.move("L")
 	head.move("U")
-	//here they are on top of each other
 	if tail.shouldMove(head) {
 		t.Fatal("failed")
 	}
-	head.move("U")
 	head.move("R")
-	if tail.shouldMove(head) {
-		t.Fatal("failed")
+	if !tail.shouldMove(head) {
+		t.Fatal()
+	}
+	if !tail.isDiagonal(head.pos) {
+		t.Fatal()
 	}
 }
 
 func TestAddValueToTailPath(t *testing.T) {
+	head := NewHead()
 	tail := NewTail()
-	tail.move("R")
+
+	head.move("R")
+	head.move("R")
+	tail.move(head.pos)
 	tail.addToPath()
-	tail.move("U")
+	head.move("U")
+	head.move("U")
+	tail.move(head.pos)
 	tail.addToPath()
-	tail.move("D")
-	tail.addToPath()
-	tail.move("R")
-	tail.move("R")
-	tail.move("U")
-	tail.addToPath()
-	result := map[string]int{
-		"1-0": 2,
-		"1-1": 1,
-		"3-1": 1,
-	}
-	if result["1-0"] != tail.path["1-0"] {
-		t.Fatal("failed")
+	log.Println(tail.path)
+}
+
+func TestQuadrants(t *testing.T) {
+	tail := NewTail()
+	tail.pos = Pos{2, 4}
+	if tail.findQuadrant(Pos{4, 3}) != 1 {
+		t.Fatal()
 	}
 }
 
@@ -104,13 +100,13 @@ func TestInstructions(t *testing.T) {
 	head := NewHead()
 	tail := NewTail()
 	tail.addToPath()
-	for _, i := range instructions {
+	for _, i := range instructionsSmall {
 		rule := strings.Split(i, " ")
 		amount, _ := strconv.Atoi(rule[1])
 		for i := 0; i < amount; i++ {
 			head.move(rule[0])
 			if tail.shouldMove(head) {
-				tail.pos = head.prev
+				tail.move(head.pos)
 				tail.addToPath()
 			}
 		}
@@ -120,3 +116,38 @@ func TestInstructions(t *testing.T) {
 		t.Fatal("failed")
 	}
 }
+
+//func TestInstructionsPart2Small(t *testing.T) {
+//	head := NewHead()
+//	knots := []Tail{NewTail(), NewTail(), NewTail(), NewTail(), NewTail(), NewTail(), NewTail(), NewTail(), NewTail()}
+//	knots[8].addToPath()
+//	knots[8].name = "last"
+//
+//	for _, i := range instructionsSmall {
+//		rule := strings.Split(i, " ")
+//		amount, _ := strconv.Atoi(rule[1])
+//		for i := 0; i < amount; i++ {
+//			head.move(rule[0])
+//			if knots[0].shouldMove(head) {
+//				knots[0].prev = knots[0].pos
+//				knots[0].pos = head.prev
+//
+//				for i := 1; i < len(knots)-2; i++ {
+//					if knots[i].shouldMoveT(knots[i-1]) {
+//						knots[i].prev = knots[i].pos
+//						knots[i].pos = knots[i-1].prev
+//					}
+//				}
+//
+//				if knots[8].shouldMoveT(knots[7]) {
+//					knots[8].pos = knots[7].prev
+//					knots[8].addToPath()
+//				}
+//			}
+//		}
+//	}
+//
+//	for _, item := range knots {
+//		log.Println(item.pos)
+//	}
+//}

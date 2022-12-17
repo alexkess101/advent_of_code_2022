@@ -22,7 +22,7 @@ func main() {
 		for i := 0; i < amount; i++ {
 			head.move(rule[0])
 			if tail.shouldMove(head) {
-				tail.pos = head.prev
+				tail.move(head.pos)
 				tail.addToPath()
 			}
 		}
@@ -37,18 +37,15 @@ type Head struct {
 }
 
 type Tail struct {
+	name string
 	pos  Pos
+	prev Pos
 	path map[string]int
 }
 
 type Pos struct {
 	x int
 	y int
-}
-
-type History struct {
-	storage Pos
-	prevMov Pos
 }
 
 func NewHead() Head {
@@ -58,15 +55,6 @@ func NewHead() Head {
 func NewTail() Tail {
 	return Tail{pos: Pos{x: 0, y: 0}, path: make(map[string]int)}
 }
-
-//func (h *History) store(way string) {
-//	if h.storage.sum() == 0 {
-//		h.storage = h
-//	} else {
-//		h.prevMov = h.storage
-//		h.storage = way
-//	}
-//}
 
 func (p Pos) stringify() string {
 	return fmt.Sprintf("%d-%d", p.x, p.y)
@@ -91,16 +79,54 @@ func (this *Head) move(way string) {
 
 }
 
-func (this *Tail) move(way string) {
-	switch way {
-	case "R":
-		this.pos.x = this.pos.x + 1
-	case "U":
-		this.pos.y = this.pos.y + 1
-	case "L":
-		this.pos.x = this.pos.x - 1
-	case "D":
-		this.pos.y = this.pos.y - 1
+func (this *Tail) move(pos Pos) {
+	if this.isDiagonal(pos) {
+		switch this.findQuadrant(pos) {
+		case 1:
+			this.pos.x = this.pos.x + 1
+			this.pos.y = this.pos.y - 1
+		case 2:
+			this.pos.x = this.pos.x - 1
+			this.pos.y = this.pos.y - 1
+		case 3:
+			this.pos.x = this.pos.x + 1
+			this.pos.y = this.pos.y + 1
+		case 4:
+			this.pos.x = this.pos.x - 1
+			this.pos.y = this.pos.y + 1
+		}
+	} else {
+		xDif := pos.x - this.pos.x
+		yDif := pos.y - this.pos.y
+
+		if xDif == 0 {
+			if yDif > 0 {
+				this.pos.y = this.pos.y + 1
+			} else {
+				this.pos.y = this.pos.y - 1
+			}
+		} else {
+			if xDif > 0 {
+				this.pos.x = this.pos.x + 1
+			} else {
+				this.pos.x = this.pos.x - 1
+			}
+		}
+	}
+}
+
+func (this *Tail) findQuadrant(pos Pos) int {
+	xDif := pos.x - this.pos.x
+	yDif := pos.y - this.pos.y
+
+	if xDif > 0 && yDif < 0 {
+		return 1
+	} else if xDif < 0 && yDif < 0 {
+		return 2
+	} else if xDif > 0 && yDif > 0 {
+		return 3
+	} else {
+		return 4
 	}
 }
 
@@ -109,6 +135,24 @@ func (this *Tail) shouldMove(head Head) bool {
 	yDif := head.pos.y - this.pos.y
 	return math.Abs(float64(xDif)) > 1 || math.Abs(float64(yDif)) > 1
 }
+
+func (this *Tail) shouldMoveT(tail Tail) bool {
+	xDif := tail.pos.x - this.pos.x
+	yDif := tail.pos.y - this.pos.y
+	return math.Abs(float64(xDif)) > 1 || math.Abs(float64(yDif)) > 1
+}
+
+func (this *Tail) isDiagonal(pos Pos) bool {
+	xDif := pos.x - this.pos.x
+	yDif := pos.y - this.pos.y
+	return (math.Abs(float64(xDif)) == 2 || math.Abs(float64(yDif)) == 2) && (xDif != 0 && yDif != 0)
+}
+
+//func (this *Tail) isDiagonalT(tail Tail) bool {
+//	xDif := tail.pos.x - this.pos.x
+//	yDif := tail.pos.y - this.pos.y
+//	return xDif == -2 || xDif == 2 || yDif == -2 || yDif == 2
+//}
 
 func (this *Tail) addToPath() {
 	if value, ok := this.path[this.pos.stringify()]; ok {
