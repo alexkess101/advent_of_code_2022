@@ -37,6 +37,11 @@ func TestValueXIsAtTheRightCycleLarge(t *testing.T) {
 	log.Println(xValues)
 }
 
+func TestDrawPixel(t *testing.T) {
+	cycles := ParseInstructions(bigInput)
+	CycleThrough(cycles, []int{})
+}
+
 var bigInput = []string{
 	"addx 15",
 	"addx -11",

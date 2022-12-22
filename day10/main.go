@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -46,11 +47,26 @@ func CycleThrough(cycles, window []int) map[int]int {
 		if isMatchFound(i+1, window) {
 			xValues[i+1] = X
 		}
+		DrawPixel(i, X)
 
 		X += cycles[i]
 	}
 
 	return xValues
+}
+
+func DrawPixel(cycle int, X int) {
+	pixel := "."
+	cycle = cycle % 40
+	if cycle >= X-1 && cycle <= X+1 {
+		pixel = "#"
+	}
+
+	if (cycle+1)%40 == 0 && cycle != 0 {
+		fmt.Printf("%s\n", pixel)
+	} else {
+		fmt.Printf("%s", pixel)
+	}
 }
 
 func isMatchFound(value int, list []int) bool {
