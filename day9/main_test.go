@@ -18,6 +18,17 @@ var instructionsSmall = []string{
 	"R 2",
 }
 
+var instructionsBig = []string{
+	"R 5",
+	"U 8",
+	"L 8",
+	"D 3",
+	"R 17",
+	"D 10",
+	"L 25",
+	"U 20",
+}
+
 func TestMoveHead(t *testing.T) {
 	head := NewHead()
 	head.move("R")
@@ -34,15 +45,6 @@ func TestMoveHead(t *testing.T) {
 	head.move("L")
 	head.move("D")
 	if head.pos.x != 2 && head.pos.y != 2 {
-		t.Fatal("failed")
-	}
-}
-
-func TestHeadPreviousMove(t *testing.T) {
-	head := NewHead()
-	head.move("R")
-	head.move("U")
-	if head.prev.sum() != 1 {
 		t.Fatal("failed")
 	}
 }
@@ -117,37 +119,20 @@ func TestInstructions(t *testing.T) {
 	}
 }
 
-//func TestInstructionsPart2Small(t *testing.T) {
-//	head := NewHead()
-//	knots := []Tail{NewTail(), NewTail(), NewTail(), NewTail(), NewTail(), NewTail(), NewTail(), NewTail(), NewTail()}
-//	knots[8].addToPath()
-//	knots[8].name = "last"
-//
-//	for _, i := range instructionsSmall {
-//		rule := strings.Split(i, " ")
-//		amount, _ := strconv.Atoi(rule[1])
-//		for i := 0; i < amount; i++ {
-//			head.move(rule[0])
-//			if knots[0].shouldMove(head) {
-//				knots[0].prev = knots[0].pos
-//				knots[0].pos = head.prev
-//
-//				for i := 1; i < len(knots)-2; i++ {
-//					if knots[i].shouldMoveT(knots[i-1]) {
-//						knots[i].prev = knots[i].pos
-//						knots[i].pos = knots[i-1].prev
-//					}
-//				}
-//
-//				if knots[8].shouldMoveT(knots[7]) {
-//					knots[8].pos = knots[7].prev
-//					knots[8].addToPath()
-//				}
-//			}
-//		}
-//	}
-//
-//	for _, item := range knots {
-//		log.Println(item.pos)
-//	}
-//}
+func TestPullingTheLastKnot(t *testing.T) {
+	var input = []string{
+		"R 20",
+	}
+
+	if len(SimulatePart2(input)) != 18 {
+		t.Fatal()
+	}
+}
+
+func TestInstructionsPart2Small(t *testing.T) {
+	log.Println(SimulatePart2(instructionsSmall))
+}
+
+func TestInstructionsPart2Big(t *testing.T) {
+	log.Println("here ", len(SimulatePart2(instructionsBig)))
+}
